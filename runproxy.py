@@ -28,22 +28,20 @@ class MyProxy(Proxy):
         if self.server:
             if self.server.addr[0] == 'habrahabr.ru':
                 try:
-                    tree = html.fromstring(data)
+                    decompressed_data=zlib.decompress(data, 16+zlib.MAX_WBITS)
+                    tree = html.fromstring(decompressed_data)
                     element = tree.xpath('//div[@class="content_left"]/\
                                           div[@class="post_show"]/\
                                           div[@class="post"]/div[@class="content"]') 
-                    try:
-                        text = element[0].text
-                        words = text.split(' ')
-                        for index in range(len(words)):
-                            if len(words[index]) == 4:
-                                words[index] = words[index]+'"-CHOCO"'
+                    text = element[0].text
+                    words = text.split(' ')
+                    for index in range(len(words)):
+                        if len(words[index]) == 4:
+                            words[index] = words[index]+'"-CHOCO"'
 
-                        text = " ".join(words)
-                        element[0].text = text
-                        data = html.tostring(tree)
-                    except:
-                        pass
+                    text = " ".join(words)
+                    element[0].text = text
+                    data = html.tostring(tree)                        
                 except:
                     pass
 
