@@ -1,27 +1,37 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import argparse
-import logging
-from proxy import *
 import zlib
+import logging
+import argparse
+from proxy import *
+from lxml import html
 from http_parser.http import HttpStream
 from http_parser.reader import SocketReader
-from lxml import html
 
 class MyProxy(Proxy):
+    '''
+    Inherited class of proxy.Proxy class, which is HTTP proxy implementation.
+    Accepts connection object and act as a proxy between client and server.
+    '''
 
     def _process_response(self, data):
-        # parse incoming response packet
-        # only for non-https requests
+        '''
+            Method has been overrided because response body should be changed
+        '''
         if not self.request.method == b"CONNECT":
             self.response.parse(data)
 
+        #if self.server not None(initially, it is), method checks address
+        #then finds "content" element of the page(using lxml library), find all words with
+        #length 5  and add to the word "-CHOCO". Finally, set new data to client queue
         if self.server:
             if self.server.addr[0] == 'habrahabr.ru':
                 try:
                     tree = html.fromstring(data)
-                    element = tree.xpath('//div[@class="content_left"]/div[@class="post_show"]/div[@class="post"]/div[@class="content"]') 
+                    element = tree.xpath('//div[@class="content_left"]/\
+                                          div[@class="post_show"]/\
+                                          div[@class="post"]/div[@class="content"]') 
                     try:
                         text = element[0].text
                         words = text.split(' ')
@@ -40,13 +50,20 @@ class MyProxy(Proxy):
         # queue data for client
         self.client.queue(data)
 
+
 class MyHTTP(HTTP):
-   
+    '''
+    Inherited class of proxy.HTTP class, which is HTTP proxy implementation.
+    Accepts connection object and act as a proxy between client and server.
+    '''
+
     def handle(self, client):
+        #has been overrided because of new Proxy class
         proc = MyProxy(client)
         proc.daemon = True
         proc.start()
         logger.debug('Started process %r to handle connection %r' % (proc, client.conn))
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -59,7 +76,8 @@ def main():
     parser.add_argument('--log-level', default='INFO', help='DEBUG, INFO, WARNING, ERROR, CRITICAL')
     args = parser.parse_args()
     
-    logging.basicConfig(level=getattr(logging, args.log_level), format='%(asctime)s - %(levelname)s - pid:%(process)d - %(message)s')
+    logging.basicConfig(level=getattr(logging, args.log_level), \
+                                      format='%(asctime)s - %(levelname)s - pid:%(process)d - %(message)s')
     
     hostname = args.hostname
     port = int(args.port)
