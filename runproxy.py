@@ -28,6 +28,7 @@ class MyProxy(Proxy):
         if self.server:
             if self.server.addr[0] == 'habrahabr.ru':
                 try:
+                    #data need to be decompressed, because content encoding is gzip
                     decompressed_data=zlib.decompress(data, 16+zlib.MAX_WBITS)
                     tree = html.fromstring(decompressed_data)
                     element = tree.xpath('//div[@class="content_left"]/\
